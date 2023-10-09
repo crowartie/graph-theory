@@ -1,19 +1,15 @@
-
 def dijkstra(graph, start_point, end_point):
     short_paths = {start_point: (None, 0)}
     queue = [(0, start_point)]
     while queue:
-
         queue.sort()
         (distance, current_point) = queue.pop(0)
-        print(queue)
         for neighbour, weight in graph[current_point].items():
             old_distance = short_paths.get(neighbour, (None, float('inf')))[1]
             new_distance = distance + weight
             if new_distance < old_distance:
                 short_paths[neighbour] = (current_point, new_distance)
                 queue.append((new_distance, neighbour))
-    print(short_paths)
     path = []
     current_point = end_point
     while current_point is not None:
