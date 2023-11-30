@@ -1,6 +1,7 @@
 import sys
-import pygame
 import pygame as pg
+from game import Game
+from minimax import minimax
 
 pg.init()
 size_button = 100
@@ -15,100 +16,63 @@ COMPUTER = "O"
 white = (255, 255, 255)
 red = (255, 0, 0)
 green = (0, 255, 0)
-mas = [['_'] * 3 for i in range(3)]
-print(mas)
 
+game = Game()
 
-def minimax(board, depth, is_maximizing):
-    result = check_winner()
-
-    if result is not None:
-        if result == COMPUTER:
-            return 1
-        elif result == PLAYER:
-            return -1
-        else:
-            return 0
-
-    if is_maximizing:
-        best_score = -float('inf')
-        for row in range(3):
-            for col in range(3):
-                if board[row][col] == '_':
-                    board[row][col] = COMPUTER
-                    score = minimax(board, depth + 1, False)
-                    board[row][col] = '_'
-                    best_score = max(score, best_score)
-        return best_score
+def draw_endgame_message(result):
+    if result == 'X':
+        message = "Победили крестики!"
+    elif result == 'O':
+        message = "Победили нолики!"
     else:
-        best_score = float('inf')
-        for row in range(3):
-            for col in range(3):
-                if board[row][col] == '_':
-                    board[row][col] = PLAYER
-                    score = minimax(board, depth + 1, True)
-                    board[row][col] = '_'
-                    best_score = min(score, best_score)
-        return best_score
+        message = "Ничья!"
+    font = pg.font.Font(None, 50)
+    text = font.render(message, True, (0, 0, 0))
+    screen.blit(text, (width // 2 - text.get_width() // 2, height // 2 - text.get_height() // 2))
 
 
-def best_move():
-    best_score = -float('inf')
-    move = None
-    for row in range(3):
-        for col in range(3):
-            if mas[row][col] == '_':
-                mas[row][col] = COMPUTER
-                score = minimax(mas, 0, False)
-                mas[row][col] = '_'
-                if score > best_score:
-                    best_score = score
-                    move = (row, col)
-    return move
-
-
-def check_winner():
-    # Проверка выигрышных комбинаций
-    for i in range(3):
-        if mas[i][0] == mas[i][1] == mas[i][2] != '_':
-            return mas[i][0]
-        if mas[0][i] == mas[1][i] == mas[2][i] != '_':
-            return mas[0][i]
-    if mas[0][0] == mas[1][1] == mas[2][2] != '_':
-        return mas[0][0]
-    if mas[0][2] == mas[1][1] == mas[2][0] != '_':
-        return mas[0][2]
-    return None
+def reset_game():
+    global game
+    game = Game()
 
 
 while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
-            pygame.quit()
+            pg.quit()
             sys.exit(0)
         elif event.type == pg.MOUSEBUTTONDOWN:
             x_mouse, y_mouse = pg.mouse.get_pos()
             col = x_mouse // (size_button + margin)
             row = y_mouse // (size_button + margin)
-            if mas[row][col] == "_":
-                if PLAYER == "X":
-                    mas[row][col] = 'X'
-                    PLAYER = "O"
-                if check_winner() is None:
-                    computer_move = best_move()
-                    if computer_move:
-                        row, col = computer_move
-                        mas[row][col] = 'O'
-                    PLAYER = "X"
+            if game.board[row][col] == "_":
+                game.board[row][col] = 'X'
+                winner = game.check_winner()
+                if winner is not None or game.get_available_moves() == []:
+                    draw_endgame_message(winner)
+                    pg.display.update()
+                    pg.time.wait(2000)
+                    reset_game()
+                else:
+                    best_move_info = minimax(game, 0)
+                    if best_move_info["move"]:
+                        row, col = best_move_info["move"]
+                        game.board[row][col] = 'O'
+                        winner = game.check_winner()
+                        if winner is not None or game.get_available_moves() == []:
+                            draw_endgame_message(winner)
+                            pg.display.update()
+                            pg.time.wait(2000)
+                            reset_game()
     for row in range(3):
         for col in range(3):
             x = col * size_button + (col + 1) * margin
             y = row * size_button + (row + 1) * margin
             pg.draw.rect(screen, white, (x, y, size_button, size_button))
-            if mas[row][col] == 'X':
+            if game.board[row][col] == 'X':
                 color = green
                 symbol = 'X'
-            elif mas[row][col] == 'O':
+            elif game.board[row][col] == 'O':
                 color = red
                 symbol = 'O'
             else:
